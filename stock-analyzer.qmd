@@ -21,6 +21,7 @@ stocks <- unique(stock_data$symbol)
 # TODO: add 52 week range
 # TODO: add average trading volume
 # TODO: add daily trading volume as bar charts
+# TODO: make table reactive
 ```
 
 ```{r}
@@ -57,7 +58,7 @@ stock_data_prepared <- reactive({
    if (is.null(input$selected_symbols)) {
     return(NULL)
    } else {
-      stock_data |>
+      stock_data |> 
         filter(symbol %in% input$selected_symbols) |> 
         group_by(symbol) |> 
         summarize(

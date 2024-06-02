@@ -1,5 +1,4 @@
 library(tidyverse)
-library(tidyfinance)
 library(tidyquant)
 library(httr2)
 
