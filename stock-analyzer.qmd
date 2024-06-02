@@ -16,7 +16,7 @@ library(scales)
 
 stock_data <- readRDS("data/stock_data.rds")
 capm_data <- readRDS("data/capm_data.rds")
-stocks <- unique(stock_data$symbol)
+stocks <- sort(unique(stock_data$symbol))
 
 # TODO: add 52 week range
 # TODO: add average trading volume
@@ -26,9 +26,7 @@ stocks <- unique(stock_data$symbol)
 
 ```{r}
 selectizeInput("selected_symbols", "Select one or more symbols", choices = NULL, multiple = TRUE)
-```
 
-```{r}
 gt_output("table_summary")
 ```
 
@@ -45,11 +43,11 @@ capm_data_prepared <- reactive({
   } else {
     capm_data |> 
       filter(symbol %in% input$selected_symbols) |> 
-                  filter(p_value <= 0.05) |> 
+      mutate(estimate = if_else(p_value > 0.05, as.numeric(NA), estimate)) |> 
                   select(symbol, term, estimate) |> 
                   pivot_wider(id_cols = symbol, names_from = term, values_from = estimate) |> 
                   mutate(beta = as.character(round(beta, 2)), 
-                         alpha = percent(alpha, accuracy = 1L),
+                         alpha = percent(as.numeric(alpha), accuracy = 1L),
                          across(c(alpha, beta), ~if_else(is.na(.), "", .)))
       }
 })
