@@ -50,4 +50,6 @@ rsconnect/
 
 # Images
 *.webp
+
+# Data
 *.rds
