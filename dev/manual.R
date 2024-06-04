@@ -5,6 +5,7 @@ library(gtExtras)
 library(svglite)
 library(scales)
 library(ggplot2)
+library(ggiraph)
 
 dates <- readRDS("data/dates.rds")
 stock_data <- readRDS("data/stock_data.rds")
@@ -15,7 +16,7 @@ stocks <- sort(unique(stock_data$symbol))
 
 source("R/helpers.R")
 
-input <- list("selected_symbols" = c("AAPL", "MSFT", "NVDA"))
+input <- list("selected_symbols" = c("AAPL", "MSFT", "NVDA"), "multiple"=3)
 
 capm_data_prepared <- capm_data |> 
   prepare_capm_data(input)
@@ -28,9 +29,9 @@ portfolio_weights <- stock_data |>
   calculate_portfolio_weights(input) 
 
 stock_data_prepared |>
-  create_table_summary()
+  create_table_summary(dates)
 
 portfolio_weights |>
-  create_table_weights()
+  create_table_weights(input)
 
-draw_efficient_frontier(stock_data, portfolio_weights)
+draw_efficient_frontier(stock_data, input, portfolio_weights)

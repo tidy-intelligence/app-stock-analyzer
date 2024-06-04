@@ -10,9 +10,6 @@ library(svglite)
 library(scales)
 library(ggplot2)
 
-# TODO: make figure interactive
-# TODO: figure should only be drawn when button is hit
-
 # Load data -----------------------------------------------------------
 
 dates <- readRDS("data/dates.rds")
