@@ -172,7 +172,6 @@ draw_efficient_frontier <- function(stock_data, input, portfolio_weights) {
   sigma <- cov(returns_matrix)
   mu <- colMeans(returns_matrix)
   
-  length_year <- 12
   res <- tibble(
     a = seq(from = -0.4, to = 1.9, by = 0.01),
     mu = NA,
@@ -180,8 +179,8 @@ draw_efficient_frontier <- function(stock_data, input, portfolio_weights) {
   )
   for (i in seq_along(res$a)) {
     w <- (1 - res$a[i]) * portfolio_weights$mvp_weights + res$a[i] * portfolio_weights$efp_weights
-    res$mu[i] <- length_year * t(w) %*% mu   
-    res$sd[i] <- sqrt(length_year) * sqrt(t(w) %*% sigma %*% w)
+    res$mu[i] <-  (1+t(w) %*% mu)^252 -1
+    res$sd[i] <- sqrt(252) * sqrt(t(w) %*% sigma %*% w)
   }
   
   figure <- res |>
@@ -193,8 +192,8 @@ draw_efficient_frontier <- function(stock_data, input, portfolio_weights) {
     ) +
     geom_point(
       data = tibble(
-        mu = length_year * mu,       
-        sd = sqrt(length_year) * sqrt(diag(sigma))
+        mu = (1+mu)^252-1,       
+        sd = sqrt(252) * sqrt(diag(sigma))
       ),
       aes(y = mu, x = sd), size = 1
     ) +

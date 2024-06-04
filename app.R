@@ -56,7 +56,7 @@ ui <- fluidPage(
       width = 12,
       p("This app compute stock-specific return metrics and calculates optimal portfolio weights for your favorite stocks from the S&P 500 index. ",
         "You can check-out ", tags$a(href = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", target = "_blank", "wikipedia"), " for a list of S&P 500 companies and their symbols. ",
-        "This app is a design concept and the data was last updated on ", dates$start_date, "."),
+        "This app is a design concept and the data starts at ", dates$start_date, " and was last updated on ", dates$end_date, "."),
       selectizeInput("selected_symbols", label = "Select one or more symbols", choices = NULL, multiple = TRUE),
       actionButton("button", "Create tables") 
     )
