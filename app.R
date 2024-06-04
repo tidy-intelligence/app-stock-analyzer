@@ -1,6 +1,7 @@
 library(shiny)
 library(shinydashboard)
 library(shinycssloaders)
+library(shinyWidgets)
 library(dplyr)
 library(tidyr)
 library(gt)
@@ -11,7 +12,6 @@ library(ggplot2)
 
 # TODO: make figure interactive
 # TODO: figure should only be drawn when button is hit
-# TODO: arrange inputs in columns
 
 # Load data -----------------------------------------------------------
 
@@ -44,9 +44,16 @@ ui <- fluidPage(
       .load-container {
         height: 180px;
       }
-      .irs-grid-pol.small {height: 0px;}
+      .irs-grid-pol.small {
+        height: 0px;
+      }
+      .irs-min, .irs-max {
+        visibility: hidden !important;
+      }
     "))
   ),
+  
+  chooseSliderSkin("Shiny", color = "black"),
   
   # App title
   titlePanel(h2("Stock-specific summaries and optimal portfolio weights", align = "center"),
@@ -59,8 +66,14 @@ ui <- fluidPage(
       p("This app compute stock-specific return metrics and calculates optimal portfolio weights for your favorite stocks from the S&P 500 index. ",
         "You can check-out ", tags$a(href = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", target = "_blank", "wikipedia"), " for a list of S&P 500 companies and their symbols. ",
         "This app is a design concept and the data starts at ", dates$start_date, " and was last updated on ", dates$end_date, "."),
-      selectizeInput("selected_symbols", label = "Select one or more symbols", choices = NULL, multiple = TRUE),
-      sliderInput("multiple", "Pick a benchmark multiple", min = 1, max = 5, value = 3),
+      fluidRow(
+        column(6, style = "padding-right: 16px;",
+               selectizeInput("selected_symbols", label = "Select one or more symbols", choices = NULL, multiple = TRUE)
+        ),
+        column(6,
+               sliderInput("multiple", "Pick a benchmark multiple", min = 1, max = 5, value = 3)
+        )
+      ),
       actionButton("button", "Create tables")
     )
   ),
@@ -100,8 +113,6 @@ ui <- fluidPage(
   )
 )
 
-# input <- list("selected_symbols" = c("MSFT", "NVDA", "UNH", "AAPL"))
-
 # Server ------------------------------------------------------------------
 server <- function(input, output, session) {
   
@@ -137,7 +148,7 @@ server <- function(input, output, session) {
       gt(tibble())
     } else {
       stock_data_prepared() |>
-        create_table_summary()
+        create_table_summary(dates)
     }
   })
 
@@ -150,15 +161,23 @@ server <- function(input, output, session) {
     }
   })
   
-  output$figure_frontier <- renderPlot({
+  figure_frontier <- eventReactive(input$button, {
     draw_efficient_frontier(stock_data, input, portfolio_weights())
   })
   
-  output$figure_description <- renderText({
+  output$figure_frontier <- renderPlot({
+    figure_frontier()
+  })
+  
+  figure_description <- eventReactive(input$button, {
     paste0(
       "The big dots indicate the location of the minimum variance and the efficient portfolio that delivers ",  
       input$multiple,
       " times the expected return of the minimum variance portfolio, respectively. The small dots indicate the location of the individual constituents.")
+  })
+  
+  output$figure_description <- renderText({
+    figure_description()
   })
 }
 

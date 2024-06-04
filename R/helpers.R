@@ -1,4 +1,4 @@
-create_table_summary <- function(data) {
+create_table_summary <- function(data, dates) {
   data |> 
     select(image, symbol, mean, sd, alpha, beta, everything()) |> 
     arrange(symbol) |> 
@@ -48,7 +48,7 @@ create_table_summary <- function(data) {
       locations = cells_column_spanners("CAPM")
     )  |> 
     tab_footnote(
-      footnote = "Distance from all-time high (ATH) since beginning of 2000.",
+      footnote = paste0("Distance from all-time high (ATH) since ", dates$start_date, "."),
       locations = cells_column_labels("distance_from_ath")
     ) |> 
     tab_options(table.width = pct(100))
