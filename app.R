@@ -10,6 +10,8 @@ library(svglite)
 library(scales)
 library(ggplot2)
 
+# TODO: add benchmark performance of s&p 500 and risk-free rate
+
 # Load data -----------------------------------------------------------
 
 dates <- readRDS("data/dates.rds")
