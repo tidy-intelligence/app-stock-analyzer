@@ -11,6 +11,7 @@ library(ggplot2)
 
 # TODO: make figure interactive
 # TODO: figure should only be drawn when button is hit
+# TODO: arrange inputs in columns
 
 # Load data -----------------------------------------------------------
 
@@ -43,6 +44,7 @@ ui <- fluidPage(
       .load-container {
         height: 180px;
       }
+      .irs-grid-pol.small {height: 0px;}
     "))
   ),
   
@@ -58,7 +60,8 @@ ui <- fluidPage(
         "You can check-out ", tags$a(href = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", target = "_blank", "wikipedia"), " for a list of S&P 500 companies and their symbols. ",
         "This app is a design concept and the data starts at ", dates$start_date, " and was last updated on ", dates$end_date, "."),
       selectizeInput("selected_symbols", label = "Select one or more symbols", choices = NULL, multiple = TRUE),
-      actionButton("button", "Create tables") 
+      sliderInput("multiple", "Pick a benchmark multiple", min = 1, max = 5, value = 3),
+      actionButton("button", "Create tables")
     )
   ),
   
@@ -67,7 +70,8 @@ ui <- fluidPage(
     box(
       width = 12,
       withSpinner(
-        gt_output("table_summary")
+        gt_output("table_summary"),
+        color = "black"
       )
     )
   ),
@@ -77,7 +81,8 @@ ui <- fluidPage(
     box(
       width = 12,
       withSpinner(
-        gt_output("table_weights")
+        gt_output("table_weights"),
+        color = "black"
       )
     )
   ),
@@ -87,7 +92,8 @@ ui <- fluidPage(
     box(
       width = 12,
       withSpinner(
-        plotOutput("figure_frontier")
+        plotOutput("figure_frontier"),
+        color = "black"
       ),
       textOutput("figure_description")
     )
@@ -140,7 +146,7 @@ server <- function(input, output, session) {
       gt(tibble())
     } else {
       portfolio_weights() |>
-        create_table_weights()
+        create_table_weights(input)
     }
   })
   
@@ -149,7 +155,10 @@ server <- function(input, output, session) {
   })
   
   output$figure_description <- renderText({
-    "The big dots indicate the location of the minimum variance and the efficient portfolio that delivers 3 times the expected return of the minimum variance portfolio, respectively. The small dots indicate the location of the individual constituents."
+    paste0(
+      "The big dots indicate the location of the minimum variance and the efficient portfolio that delivers ",  
+      input$multiple,
+      " times the expected return of the minimum variance portfolio, respectively. The small dots indicate the location of the individual constituents.")
   })
 }
 

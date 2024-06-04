@@ -15,7 +15,7 @@ stocks <- sort(unique(stock_data$symbol))
 
 source("R/helpers.R")
 
-input <- list("selected_symbols" = c("MSFT", "NVDA"))
+input <- list("selected_symbols" = c("AAPL", "MSFT", "NVDA"))
 
 capm_data_prepared <- capm_data |> 
   prepare_capm_data(input)

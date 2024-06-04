@@ -1,6 +1,7 @@
 create_table_summary <- function(data) {
   data |> 
     select(image, symbol, mean, sd, alpha, beta, everything()) |> 
+    arrange(symbol) |> 
     gt() |>
     text_transform(
       locations = cells_body(columns = image),
@@ -53,8 +54,9 @@ create_table_summary <- function(data) {
     tab_options(table.width = pct(100))
 }
 
-create_table_weights <- function(portfolio_weights) {
+create_table_weights <- function(portfolio_weights, input) {
   portfolio_weights |> 
+    arrange(symbol) |> 
     mutate(image = symbol) |> 
     select(image, symbol, everything()) |> 
     gt() |> 
@@ -79,7 +81,7 @@ create_table_weights <- function(portfolio_weights) {
       columns = c(mvp_weights, efp_weights)
     ) |> 
     tab_footnote(
-      footnote = "Efficient portfolio weights are computed using a benchmark multiple of 3.",
+      footnote = paste0("Efficient portfolio weights are computed using a benchmark multiple of ", input$multiple, "."),
       locations = cells_column_labels("efp_weights")
     ) |> 
     tab_options(table.width = pct(100))
@@ -142,7 +144,7 @@ calculate_portfolio_weights <- function(stock_data, input) {
   )
   
   # Efficient portfolio weights
-  benchmark_multiple <- 3
+  benchmark_multiple <- input$multiple
   mu_bar <- benchmark_multiple * t(mvp_weights) %*% mu
   C <- as.numeric(t(iota) %*% sigma_inv %*% iota)
   D <- as.numeric(t(iota) %*% sigma_inv %*% mu)

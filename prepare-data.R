@@ -20,7 +20,8 @@ stock_data <- stock_prices |>
   fill(adjusted, .direction = "down") |> 
   mutate(ret = adjusted / lag(adjusted) - 1) |>
   ungroup() |> 
-  drop_na(ret) 
+  drop_na(ret) |> 
+  arrange(symbol, date)
 
 # Download market prices
 market_prices <- tq_get(
