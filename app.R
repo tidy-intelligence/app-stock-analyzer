@@ -32,6 +32,9 @@ ui <- fluidPage(
       .row {
         margin-bottom: 32px;
       }
+      .row #input-row {
+        margin-bottom: 0px;
+      }
       .box {
         max-width: 720px;
         margin: 0 auto;
@@ -64,8 +67,10 @@ ui <- fluidPage(
       width = 12,
       p("This app compute stock-specific return metrics and calculates optimal portfolio weights for your favorite stocks from the S&P 500 index. ",
         "You can check-out ", tags$a(href = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", target = "_blank", "wikipedia"), " for a list of S&P 500 companies and their symbols. ",
-        "This app is a design concept and the data starts at ", dates$start_date, " and was last updated on ", dates$end_date, "."),
+        "This app is a prototype based on ", tags$a(href = "https://www.tidy-finance.org/r/introduction-to-tidy-finance.html", target = "_blank", "Tidy Finance with R"),
+        ". The data starts at ", dates$start_date, " and was last updated on ", dates$end_date, "."),
       fluidRow(
+        id = "input-row",
         column(6, style = "padding-right: 16px;",
                selectizeInput("selected_symbols", label = "Select one or more symbols", choices = NULL, multiple = TRUE)
         ),
