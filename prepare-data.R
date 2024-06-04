@@ -46,16 +46,22 @@ risk_free_data <- risk_free_raw |>
          risk_free = (1 + price)^(1/252) - 1) |> 
   select(date, risk_free)
 
-# Combine data
-stock_data <- stock_data |> 
-  left_join(risk_free_data, join_by(date)) |> 
-  left_join(market_data, join_by(date)) |> 
-  mutate(ret_excess = ret - risk_free,
-         ret_market_excess = ret_market - risk_free)
-
+# Calculate date range
+dates <- stock_data |> 
+  inner_join(risk_free_data, join_by(date)) |> 
+  inner_join(market_data, join_by(date)) |> 
+  summarize(start_date = min(date),
+            end_date = max(date))
 
 # Store data
+if (!dir.exists("data")) {
+  dir.create("data")
+}
+
+write_rds(dates, "data/dates.rds")
 write_rds(stock_data, "data/stock_data.rds")
+write_rds(risk_free_data, "data/risk_free_data.rds")
+write_rds(market_data, "data/market_data.rds")
 
 # Estimate alphas and betas -------------------------------------------
 estimate_capm <- function(data) {
@@ -63,7 +69,12 @@ estimate_capm <- function(data) {
   broom::tidy(fit)
 }
 
+# Combine data
 capm_data <- stock_data |> 
+  left_join(risk_free_data, join_by(date)) |> 
+  left_join(market_data, join_by(date)) |> 
+  mutate(ret_excess = ret - risk_free,
+         ret_market_excess = ret_market - risk_free) |> 
   select(symbol, ret_excess, ret_market) |> 
   group_by(symbol) |> 
   nest(data = c(ret_excess, ret_market)) |> 
@@ -73,10 +84,16 @@ capm_data <- stock_data |>
   mutate(term = if_else(term == "(Intercept)", "alpha", "beta"),
          estimate = if_else(term == "alpha", (1 + estimate)^252 - 1, estimate)) |> 
   ungroup()
+
+if (!dir.exists("data")) {
+  dir.create("data")
+}
   
 write_rds(capm_data, "data/capm_data.rds")
 
 # Download logos ------------------------------------------------------
+base_url <- "https://companiesmarketcap.com/img/company-logos/64/"
+
 symbols <- symbols |> 
   mutate(symbol_alt = case_when(symbol == "GOOGL" ~ "GOOG",
                                 symbol == "CPAY" ~ "FLT",
@@ -86,20 +103,21 @@ symbols <- symbols |>
                                 TRUE ~ symbol)) |> 
   filter(!symbol %in% c("GEV", "VLTO", "SOLV"))
 
-# TODO: add logic to skip already downloaded logos
+if (!dir.exists("data/logos")) {
+  dir.create("data/logos")
+}
 
-base_url <- "https://companiesmarketcap.com/img/company-logos/64/"
-
-for (j in 477:nrow(symbols)) {
+for (j in 1:nrow(symbols)) {
   
   image_url <- paste0(base_url, symbols$symbol_alt[j], ".webp")
   destfile <- paste0("data/logos/", symbols$symbol[j], ".webp")
   
-  request <- request(image_url)
-
-  request|>
-    req_perform() |>
-    resp_body_raw() |>
-    writeBin(destfile)
+  if (!file.exists(destfile)) {
+    request <- request(image_url)
+    
+    request|>
+      req_perform() |>
+      resp_body_raw() |>
+      writeBin(destfile)
+  }
 }
-
