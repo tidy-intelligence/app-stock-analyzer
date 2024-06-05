@@ -66,9 +66,10 @@ ui <- fluidPage(
     box(
       width = 12,
       p("This app compute stock-specific return metrics and calculates optimal portfolio weights for your favorite stocks from the S&P 500 index. ",
-        "You can check-out ", tags$a(href = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", target = "_blank", "wikipedia"), " for a list of S&P 500 companies and their symbols. ",
+        "You can check-out ", tags$a(href = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", target = "_blank", "wikipedia"), " for a list of S&P 500 companies and their symbols. ", tags$br(),
         "This app is a prototype based on ", tags$a(href = "https://www.tidy-finance.org/r/introduction-to-tidy-finance.html", target = "_blank", "Tidy Finance with R"),
-        ". The data starts at ", dates$start_date, " and was last updated on ", dates$end_date, "."),
+        ". The data starts at ", dates$start_date, " and was last updated on ", dates$end_date, ". ", tags$br(),
+        "You can find the source code of this app on ", tags$a(href = "https://github.com/christophscheuch/app-stock-analyzer", target = "_blank", "GitHub"), "."),
       fluidRow(
         id = "input-row",
         column(6, style = "padding-right: 16px;",
