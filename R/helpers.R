@@ -44,7 +44,7 @@ create_table_summary <- function(data, dates) {
       columns = c(alpha, beta)
     ) |> 
     tab_footnote(
-      footnote = "CAPM shows only coefficients that are statistically significant at 5%.",
+      footnote = "CAPM is based on S&P 500 and shows only coefficients that are statistically significant at 5%.",
       locations = cells_column_spanners("CAPM")
     )  |> 
     tab_footnote(
