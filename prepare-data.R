@@ -8,7 +8,9 @@ end_date <- Sys.Date()-1
 
 # Download stock prices
 symbols <- tq_index("SP500") |> 
-  filter(company != "US DOLLAR")
+  filter(company != "US DOLLAR") |> 
+  arrange(desc(weight)) |> 
+  slice(1:50)
 
 stock_prices <- tq_get(
   symbols, get = "stock.prices", from = start_date, to = end_date
