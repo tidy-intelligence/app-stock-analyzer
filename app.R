@@ -2,6 +2,7 @@ library(shiny)
 library(shinydashboard)
 library(shinycssloaders)
 library(shinyWidgets)
+library(shinyjs)
 library(dplyr)
 library(tidyr)
 library(gt)
@@ -11,6 +12,7 @@ library(scales)
 library(ggplot2)
 
 # TODO: add benchmark performance of s&p 500 and risk-free rate
+# TODO: load tables by default
 
 # Load data -----------------------------------------------------------
 
@@ -23,8 +25,12 @@ stocks <- sort(unique(stock_data$symbol))
 
 source("R/helpers.R")
 
-# User interface ----------------------------------------------------------
+# User interface ------------------------------------------------------
+
 ui <- fluidPage(
+  
+  useShinyjs(),
+  extendShinyjs(text = "shinyjs.clickButton = function() { setTimeout(function() { $('#button').click(); }, 500); }", functions = c("clickButton")),
   
   # Custom styling
   tags$head(
@@ -72,13 +78,14 @@ ui <- fluidPage(
       fluidRow(
         id = "input-row",
         column(6, style = "padding-right: 16px;",
-               selectizeInput("selected_symbols", label = "Select one or more symbols", choices = NULL, multiple = TRUE)
+               selectizeInput("selected_symbols", label = "Select one or more symbols", choices = NULL, multiple = TRUE,
+                              selected = c("MSFT", "NVDA", "UNH", "AAPL"))
         ),
         column(6,
                sliderInput("multiple", "Pick a benchmark multiple", min = 1, max = 5, value = 3)
         )
       ),
-      actionButton("button", "Create tables")
+      actionButton("button", "Update tables")
     )
   ),
   
@@ -124,22 +131,14 @@ server <- function(input, output, session) {
                        selected = c("MSFT", "NVDA", "UNH", "AAPL"))
   
   capm_data_prepared <- eventReactive(input$button, {
-    if (is.null(input$selected_symbols) || length(input$selected_symbols) == 0) {
-      return(NULL)
-    } else {
       capm_data |> 
         prepare_capm_data(input)
-    }
   })
   
   stock_data_prepared <- eventReactive(input$button, {
-    if (is.null(input$selected_symbols) || length(input$selected_symbols) == 0) {
-      return(NULL)
-    } else {
       stock_data |> 
         prepare_stock_data(input) |> 
         left_join(capm_data_prepared(), join_by(symbol))
-    }
   })
   
   portfolio_weights <- eventReactive(input$button, {
@@ -155,7 +154,7 @@ server <- function(input, output, session) {
         create_table_summary(dates)
     }
   })
-
+  
   output$table_weights <- render_gt({
     if (is.null(stock_data_prepared())) {
       gt(tibble())
@@ -165,15 +164,19 @@ server <- function(input, output, session) {
     }
   })
   
-  figure_frontier <- eventReactive(input$button, {
-    draw_efficient_frontier(stock_data, input, portfolio_weights())
+  figure_frontier <- reactive({
+    if (is.null(portfolio_weights())) {
+      ggplot() + theme_classic()
+    } else {
+      draw_efficient_frontier(stock_data, input, portfolio_weights())
+    }
   })
   
   output$figure_frontier <- renderPlot({
     figure_frontier()
   })
   
-  figure_description <- eventReactive(input$button, {
+  figure_description <- reactive({
     paste0(
       "The big dots indicate the location of the minimum variance and the efficient portfolio that delivers ",  
       input$multiple,
@@ -183,6 +186,11 @@ server <- function(input, output, session) {
   output$figure_description <- renderText({
     figure_description()
   })
+  
+  observe({
+    js$clickButton()
+  })
+  
 }
 
 # Run app -----------------------------------------------------------------
