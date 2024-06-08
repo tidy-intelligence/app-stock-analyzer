@@ -10,8 +10,6 @@ library(svglite)
 library(scales)
 library(ggplot2)
 
-# TODO: add benchmark performance of s&p 500 and risk-free rate
-# TODO: make tables horizontally scrollable
 # TODO: reduce font size on mobile
 
 # Load data -----------------------------------------------------------
@@ -62,6 +60,12 @@ ui <- fluidPage(
       .irs-min, .irs-max {
         visibility: hidden !important;
       }
+      .scrollable-box {
+        overflow-x: auto;
+      }
+      .wide-table {
+        min-width: 700px;
+      }
     "))
   ),
   
@@ -97,9 +101,13 @@ ui <- fluidPage(
   fluidRow(
     box(
       width = 12,
-      withSpinner(
-        gt_output("table_summary"),
-        color = "black"
+      div(class = "scrollable-box",
+          div(class = "wide-table",
+          withSpinner(
+            gt_output("table_summary"),
+            color = "black"
+          )
+          )
       )
     )
   ),
@@ -108,10 +116,11 @@ ui <- fluidPage(
   fluidRow(
     box(
       width = 12,
+      div(class = "scrollable-box",
       withSpinner(
         gt_output("table_weights"),
         color = "black"
-      )
+      ))
     )
   ),
   
