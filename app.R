@@ -11,7 +11,8 @@ library(scales)
 library(ggplot2)
 
 # TODO: add benchmark performance of s&p 500 and risk-free rate
-# TODO: load tables by default
+# TODO: make tables horizontally scrollable
+# TODO: reduce font size on mobile
 
 # Load data -----------------------------------------------------------
 
@@ -82,7 +83,7 @@ ui <- fluidPage(
         id = "input-row",
         column(6, style = "padding-right: 16px;",
                selectizeInput("selected_symbols", label = "Select one or more symbols", choices = NULL, multiple = TRUE,
-                              selected = c("MSFT", "NVDA", "UNH", "AAPL"))
+                              selected = c("MSFT", "NVDA", "UNH", "AAPL", "TSLA"))
         ),
         column(6,
                sliderInput("multiple", "Pick a benchmark multiple", min = 1, max = 5, value = 3)
@@ -131,7 +132,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   updateSelectizeInput(session, "selected_symbols", choices = stocks, server = TRUE,
-                       selected = c("MSFT", "NVDA", "UNH", "AAPL"))
+                       selected = c("MSFT", "NVDA", "UNH", "AAPL", "TSLA"))
   
   capm_data_prepared <- eventReactive(input$button, {
       capm_data |> 

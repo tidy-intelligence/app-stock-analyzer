@@ -130,7 +130,8 @@ calculate_portfolio_weights <- function(stock_data, input) {
       names_from = symbol,
       values_from = ret
     ) |>
-    select(-date)
+    select(-date) |> 
+    drop_na()
   sigma <- cov(returns_matrix)
   mu <- colMeans(returns_matrix)
   
@@ -172,7 +173,9 @@ draw_efficient_frontier <- function(stock_data, input, portfolio_weights) {
       names_from = symbol,
       values_from = ret
     ) |>
-    select(-date)
+    select(-date) |> 
+    drop_na()
+  
   sigma <- cov(returns_matrix)
   mu <- colMeans(returns_matrix)
   
