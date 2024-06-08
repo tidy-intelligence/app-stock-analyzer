@@ -2,6 +2,7 @@ library(shiny)
 library(shinydashboard)
 library(shinycssloaders)
 library(shinyWidgets)
+library(shinyjs)
 library(dplyr)
 library(tidyr)
 library(gt)
@@ -27,46 +28,10 @@ source("R/helpers.R")
 
 ui <- fluidPage(
   
-  tags$script(HTML("
-    $(document).ready(function() {
-      setTimeout(function() {
-        $('#button').click();
-      }, 500);
-    });
-  ")),
+  useShinyjs(),
   
   tags$head(
-    tags$style(HTML("
-      .row {
-        margin-bottom: 32px;
-      }
-      .row #input-row {
-        margin-bottom: 0px;
-      }
-      .box {
-        max-width: 720px;
-        margin: 0 auto;
-        min-height: 180px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        border-radius: 8px;
-        padding: 8px;
-      }
-      .load-container {
-        height: 180px;
-      }
-      .irs-grid-pol.small {
-        height: 0px;
-      }
-      .irs-min, .irs-max {
-        visibility: hidden !important;
-      }
-      .scrollable-box {
-        overflow-x: auto;
-      }
-      .wide-table {
-        min-width: 700px;
-      }
-    "))
+    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
   ),
   
   chooseSliderSkin("Shiny", color = "black"),
@@ -199,6 +164,8 @@ server <- function(input, output, session) {
   output$figure_description <- renderText({
     figure_description()
   })
+  
+  delay(1000, click("button"))
   
 }
 
