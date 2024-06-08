@@ -2,7 +2,6 @@ library(shiny)
 library(shinydashboard)
 library(shinycssloaders)
 library(shinyWidgets)
-library(shinyjs)
 library(dplyr)
 library(tidyr)
 library(gt)
@@ -29,10 +28,14 @@ source("R/helpers.R")
 
 ui <- fluidPage(
   
-  useShinyjs(),
-  extendShinyjs(text = "shinyjs.clickButton = function() { setTimeout(function() { $('#button').click(); }, 500); }", functions = c("clickButton")),
+  tags$script(HTML("
+    $(document).ready(function() {
+      setTimeout(function() {
+        $('#button').click();
+      }, 500);
+    });
+  ")),
   
-  # Custom styling
   tags$head(
     tags$style(HTML("
       .row {
@@ -185,10 +188,6 @@ server <- function(input, output, session) {
   
   output$figure_description <- renderText({
     figure_description()
-  })
-  
-  observe({
-    js$clickButton()
   })
   
 }

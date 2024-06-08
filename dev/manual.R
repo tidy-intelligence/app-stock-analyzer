@@ -5,7 +5,6 @@ library(gtExtras)
 library(svglite)
 library(scales)
 library(ggplot2)
-library(ggiraph)
 
 dates <- readRDS("data/dates.rds")
 stock_data <- readRDS("data/stock_data.rds")

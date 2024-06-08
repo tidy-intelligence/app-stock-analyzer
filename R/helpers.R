@@ -13,7 +13,7 @@ create_table_summary <- function(data, dates) {
     ) |> 
     gt_plt_dist(ret_data, trim = TRUE) |> 
     gt_plt_sparkline(adjusted_data, type = "shaded", same_limit = FALSE, label = FALSE, 
-                     palette = c("black", NA, NA, NA, "grey")) |> 
+                     palette = c("black", NA, NA, NA, "lightgrey")) |> 
     gt_plt_bar_pct(distance_from_ath, fill = "black", background = "lightgrey", width = 75) |> 
     cols_label(image = "",
                symbol = "", 
@@ -50,7 +50,7 @@ create_table_summary <- function(data, dates) {
     tab_footnote(
       footnote = paste0("Distance from all-time high (ATH) since ", dates$start_date, "."),
       locations = cells_column_labels("distance_from_ath")
-    ) |> 
+    ) |>
     tab_options(table.width = pct(100),
                 table.font.size = "small")
 }
