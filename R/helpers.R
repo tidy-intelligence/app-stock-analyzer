@@ -51,7 +51,8 @@ create_table_summary <- function(data, dates) {
       footnote = paste0("Distance from all-time high (ATH) since ", dates$start_date, "."),
       locations = cells_column_labels("distance_from_ath")
     ) |> 
-    tab_options(table.width = pct(100))
+    tab_options(table.width = pct(100),
+                table.font.size = "small")
 }
 
 create_table_weights <- function(portfolio_weights, input) {
@@ -84,7 +85,8 @@ create_table_weights <- function(portfolio_weights, input) {
       footnote = paste0("Efficient portfolio weights are computed using a benchmark multiple of ", input$multiple, "."),
       locations = cells_column_labels("efp_weights")
     ) |> 
-    tab_options(table.width = pct(100))
+    tab_options(table.width = pct(100),
+                table.font.size = "small")
 }
 
 prepare_capm_data <- function(capm_data, input) {
