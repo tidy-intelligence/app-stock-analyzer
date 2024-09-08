@@ -32,7 +32,7 @@ create_table_summary <- function(data, dates) {
       columns = c(adjusted_data, ret_data)
     ) |>  
     tab_spanner(
-      label = "Yesterday",
+      label = format(dates$end_date, "%b %d, %Y"),
       columns = c(last_price, distance_from_ath)
     ) |> 
     tab_spanner(
@@ -91,7 +91,6 @@ create_table_weights <- function(portfolio_weights, input) {
 
 prepare_capm_data <- function(capm_data, input) {
   capm_data |> 
-    filter(symbol %in% input$selected_symbols) |> 
     mutate(estimate = if_else(p_value > 0.05, as.numeric(NA), estimate)) |> 
     select(symbol, term, estimate) |> 
     pivot_wider(id_cols = symbol, names_from = term, values_from = estimate) |> 
@@ -100,18 +99,17 @@ prepare_capm_data <- function(capm_data, input) {
            across(c(alpha, beta), ~if_else(is.na(.), "", .)))
 }
 
-prepare_stock_data <- function(stock_data, input) {
+prepare_stock_data <- function(stock_data) {
   stock_data |> 
-    filter(symbol %in% input$selected_symbols) |> 
     group_by(symbol) |> 
     summarize(
       mean = percent((1+mean(ret))^252-1, accuracy = 1L),
       sd = percent(sd(ret)*sqrt(252), accuracy = 1L),
       sharpe_ratio = round(mean(ret) / sd(ret) * sqrt(252), 2),
-      adjusted_data = list(adjusted[date >= Sys.Date()-365]), 
+      adjusted_data = list(adjusted_close[date >= Sys.Date()-365]), 
       ret_data = list(ret[date >= Sys.Date()-365]),
-      last_price = round(last(adjusted), 0),
-      distance_from_ath = last(adjusted) / max(adjusted),
+      last_price = round(last(adjusted_close), 0),
+      distance_from_ath = last(adjusted_close) / max(adjusted_close),
       .groups = "drop") |>
     mutate(
       image = symbol
@@ -122,7 +120,6 @@ calculate_portfolio_weights <- function(stock_data, input) {
   
   # Create returns matrix
   returns <- stock_data |> 
-    filter(symbol %in% input$selected_symbols) |> 
     select(symbol, ret, date)
   
   returns_matrix <- returns |>
@@ -132,6 +129,7 @@ calculate_portfolio_weights <- function(stock_data, input) {
     ) |>
     select(-date) |> 
     drop_na()
+  
   sigma <- cov(returns_matrix)
   mu <- colMeans(returns_matrix)
   
@@ -163,9 +161,8 @@ calculate_portfolio_weights <- function(stock_data, input) {
   )
 }
 
-draw_efficient_frontier <- function(stock_data, input, portfolio_weights) {
+draw_efficient_frontier <- function(stock_data, portfolio_weights) {
   returns <- stock_data |> 
-    filter(symbol %in% input$selected_symbols) |> 
     select(symbol, ret, date)
   
   returns_matrix <- returns |>

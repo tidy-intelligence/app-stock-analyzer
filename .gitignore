@@ -53,3 +53,5 @@ rsconnect/
 
 # Data
 *.rds
+data/stock-analyzer.duckdb.wal
+data/stock-analyzer.duckdb

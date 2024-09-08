@@ -10,15 +10,17 @@ library(gtExtras)
 library(svglite)
 library(scales)
 library(ggplot2)
-
-# TODO: reduce font size on mobile
+library(duckdb)
+library(DBI)
 
 # Load data -----------------------------------------------------------
 
-dates <- readRDS("data/dates.rds")
-stock_data <- readRDS("data/stock_data.rds")
-capm_data <- readRDS("data/capm_data.rds")
-stocks <- sort(unique(stock_data$symbol))
+con <- DBI::dbConnect(duckdb::duckdb(), dbdir = "data/stock-analyzer.duckdb")
+
+dates <- tbl(con, "dates") |> collect()
+stocks <- tbl(con, "stocks") |> collect()
+
+dbDisconnect(con)
 
 # Helper functions ----------------------------------------------------
 
@@ -44,10 +46,12 @@ ui <- fluidPage(
   fluidRow(
     box(
       width = 12,
-      p("This app is a prototype based on ", tags$a(href = "https://www.tidy-finance.org/r/introduction-to-tidy-finance.html", target = "_blank", "Tidy Finance with R"), ". It computes stock-specific return metrics and optimal portfolio weights for your favorite stocks from the S&P 500 index. ",
-        "You can check-out ", tags$a(href = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", target = "_blank", "wikipedia"), " for a list of S&P 500 companies and their symbols. ", tags$br(), tags$br(),
-        "Currently, only the largest 50 stocks of the S&P 500 can be selected due to memory constraints on the shinyapps.io free plan. ", "The data starts at ", dates$start_date, " and was last updated on ", dates$end_date, ". ", tags$br(), tags$br(),
-        "You can find the source code of this app on ", tags$a(href = "https://github.com/christophscheuch/app-stock-analyzer", target = "_blank", "GitHub"), "."),
+      p("This app is a prototype based on ", tags$a(href = "https://www.tidy-finance.org/r/introduction-to-tidy-finance.html", target = "_blank", "Tidy Finance with R"), 
+        ". It computes stock-specific return metrics and optimal portfolio weights for your favorite stocks from the S&P 500 index. ",
+        "You can check-out ", tags$a(href = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", target = "_blank", "wikipedia"), 
+        " for a list of S&P 500 companies and their symbols. ", tags$br(), tags$br(),
+        "The data starts at ", dates$start_date, " and was last updated on ", dates$end_date, ". ", tags$br(), tags$br(),
+        "You can find the source code of this app on ", tags$a(href = "https://github.com/tidy-intelligence/app-stock-analyzer", target = "_blank", "GitHub"), "."),
       fluidRow(
         id = "input-row",
         column(6, style = "padding-right: 16px;",
@@ -105,22 +109,40 @@ ui <- fluidPage(
 # Server ------------------------------------------------------------------
 server <- function(input, output, session) {
   
-  updateSelectizeInput(session, "selected_symbols", choices = stocks, server = TRUE,
-                       selected = c("MSFT", "NVDA", "UNH", "AAPL", "TSLA"))
+  updateSelectizeInput(session, "selected_symbols", choices = stocks$symbol, server = TRUE,
+                       selected = c("MSFT", "NVDA", "UNH", "AAPL", "TSLA", "ABNB"))
+  
+  stock_data_filtered <- eventReactive(input$button, {
+    con <- DBI::dbConnect(duckdb::duckdb(), dbdir = "data/stock-analyzer.duckdb")
+    results <- tbl(con, "stock_data") |> 
+      filter(symbol %in% input$selected_symbols) |> 
+      collect() 
+    dbDisconnect(con)
+    results
+  })
+  
+  capm_data_filtered <- eventReactive(input$button, {
+    con <- DBI::dbConnect(duckdb::duckdb(), dbdir = "data/stock-analyzer.duckdb")
+    results <- tbl(con, "capm_data") |> 
+      filter(symbol %in% input$selected_symbols) |> 
+      collect() 
+    dbDisconnect(con)
+    results
+  })
   
   capm_data_prepared <- eventReactive(input$button, {
-      capm_data |> 
-        prepare_capm_data(input)
+      capm_data_filtered() |> 
+        prepare_capm_data()
   })
   
   stock_data_prepared <- eventReactive(input$button, {
-      stock_data |> 
-        prepare_stock_data(input) |> 
+    stock_data_filtered() |> 
+        prepare_stock_data() |> 
         left_join(capm_data_prepared(), join_by(symbol))
   })
   
   portfolio_weights <- eventReactive(input$button, {
-    stock_data |> 
+    stock_data_filtered() |> 
       calculate_portfolio_weights(input) 
   })
   
@@ -146,7 +168,7 @@ server <- function(input, output, session) {
     if (is.null(portfolio_weights())) {
       ggplot() + theme_classic()
     } else {
-      draw_efficient_frontier(stock_data, input, portfolio_weights())
+      draw_efficient_frontier(stock_data_filtered(), portfolio_weights())
     }
   })
   

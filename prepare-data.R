@@ -1,52 +1,65 @@
 library(tidyverse)
-library(tidyquant)
+library(tidyfinance)
+library(duckdb)
 library(httr2)
+library(DBI)
 
-# Define parameters
-start_date <- as.Date("2000-01-01")
-end_date <- Sys.Date()-1
+# Initialize database -------------------------------------------------------------------------
 
-# Download stock prices
-symbols <- tq_index("SP500") |> 
-  filter(company != "US DOLLAR") |> 
-  arrange(desc(weight)) |> 
-  slice(1:50)
+con <- DBI::dbConnect(duckdb::duckdb(), dbdir = "data/stock-analyzer.duckdb")
 
-stock_prices <- tq_get(
-  symbols, get = "stock.prices", from = start_date, to = end_date
+# Define parameters ---------------------------------------------------------------------------
+
+start_date <- as.Date("2004-07-31")
+end_date <-  as.Date("2024-08-31")
+
+# Download stock prices -----------------------------------------------------------------------
+
+symbols <- download_data("constituents", index = "S&P 500")
+
+stock_prices <- download_data(
+  "stock_prices", 
+  start_date = start_date, 
+  end_date = end_date, symbols = symbols$symbol
 )
 
 stock_data <- stock_prices |>
   group_by(symbol) |> 
   arrange(date) |> 
-  fill(adjusted, .direction = "down") |> 
-  mutate(ret = adjusted / lag(adjusted) - 1) |>
+  fill(adjusted_close, .direction = "down") |>
+  mutate(ret = adjusted_close / lag(adjusted_close) - 1) |>
   ungroup() |> 
   drop_na(ret) |> 
   arrange(symbol, date)
 
 # Download market prices
-market_prices <- tq_get(
-  "^GSPC", get = "stock.prices", from = start_date, to = end_date
+market_prices <- download_data(
+  "stock_prices", 
+  start_date = start_date, 
+  end_date = end_date,
+  symbols = "^GSPC"
 )
 
 market_data <- market_prices |> 
   group_by(symbol) |> 
   arrange(date) |> 
-  fill(adjusted, .direction = "down") |> 
-  mutate(ret = adjusted / lag(adjusted) - 1) |>
+  fill(adjusted_close, .direction = "down") |> 
+  mutate(ret = adjusted_close / lag(adjusted_close) - 1) |>
   ungroup() |> 
   drop_na(ret) |> 
   select(date, ret_market = ret)
 
 # Download risk-free rates
-risk_free_raw <- tq_get(
-  "DGS1MO", get = "economic.data", from = start_date, to = end_date
+risk_free_raw <- download_data(
+  "fred", 
+  start_date = start_date, 
+  end_date = end_date,
+  series = "DGS1MO"
 )
 
 risk_free_data <- risk_free_raw |> 
-  mutate(price = price / 100,
-         risk_free = (1 + price)^(1/252) - 1) |> 
+  mutate(value = value / 100,
+         risk_free = (1 + value)^(1/252) - 1) |> 
   select(date, risk_free)
 
 # Calculate date range
@@ -61,12 +74,17 @@ if (!dir.exists("data")) {
   dir.create("data")
 }
 
-write_rds(dates, "data/dates.rds")
-write_rds(stock_data, "data/stock_data.rds")
-write_rds(risk_free_data, "data/risk_free_data.rds")
-write_rds(market_data, "data/market_data.rds")
+stocks <- stock_data |> 
+  distinct(symbol)
+
+dbWriteTable(con, "dates", dates, overwrite = TRUE)
+dbWriteTable(con, "stock_data", stock_data, overwrite = TRUE)
+dbWriteTable(con, "risk_free_data", risk_free_data, overwrite = TRUE)
+dbWriteTable(con, "market_data", market_data, overwrite = TRUE)
+dbWriteTable(con, "stocks", stocks, overwrite = TRUE)
 
 # Estimate alphas and betas -------------------------------------------
+
 estimate_capm <- function(data) {
   fit <- lm("ret_excess ~ ret_market", data = data)
   broom::tidy(fit)
@@ -74,6 +92,7 @@ estimate_capm <- function(data) {
 
 # Combine data
 capm_data <- stock_data |> 
+  filter(date >= dates$start_date) |> 
   left_join(risk_free_data, join_by(date)) |> 
   left_join(market_data, join_by(date)) |> 
   mutate(ret_excess = ret - risk_free,
@@ -91,20 +110,23 @@ capm_data <- stock_data |>
 if (!dir.exists("data")) {
   dir.create("data")
 }
-  
-write_rds(capm_data, "data/capm_data.rds")
+
+dbWriteTable(con, "capm_data", capm_data, overwrite = TRUE)
 
 # Download logos ------------------------------------------------------
-base_url <- "https://companiesmarketcap.com/img/company-logos/64/"
+
+base_url <- "https://companiesmarketcap.com/img/company-logos/256/"
 
 symbols <- symbols |> 
-  mutate(symbol_alt = case_when(symbol == "GOOGL" ~ "GOOG",
+  mutate(symbol_alt = case_when(symbol == "BRKB" ~ "BRK-B", 
+                                symbol == "GOOGL" ~ "GOOG",
                                 symbol == "CPAY" ~ "FLT",
                                 symbol == "NWSA" ~ "NWS",
                                 symbol == "FOXA" ~ "FOX",
+                                symbol == "BFB" ~ "BF-A",
                                 symbol == "BF-B" ~ "BF-A",
                                 TRUE ~ symbol)) |> 
-  filter(!symbol %in% c("GEV", "VLTO", "SOLV"))
+  filter(!symbol %in% c("GEV", "VLTO", "SOLV", "SW"))
 
 if (!dir.exists("data/logos")) {
   dir.create("data/logos")
