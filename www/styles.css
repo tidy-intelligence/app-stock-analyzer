@@ -28,3 +28,9 @@
 .wide-table {
   min-width: 700px;
 }
+
+h2 {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
